@@ -113,17 +113,35 @@ function deleteTask(id, renderCallback, updateCountCallback) {
 
 // Saves all tasks to browser's localStorage
 function saveTasksToStorage() {
-  // TODO: Save tasks to localStorage
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+  showStatus("Tasks saved to localStorage!", "success");
 }
 
 // Loads tasks from browser's localStorage
 function loadTasksFromStorage(renderCallback, updateCountCallback) {
-  // TODO: Load tasks from localStorage
+  const savedTasks = localStorage.getItem("tasks");
+  if (savedTasks) {
+    tasks = JSON.parse(savedTasks);
+    tasks.forEach((task) => {
+      taskMap.set(task.id, task);
+      taskTitles.add(task.title);
+    });
+    renderCallback();
+    updateCountCallback();
+  } else {
+    showStatus("No tasks found in localStorage.", "info");
+  }
 }
 
 // Clears all tasks from memory AND localStorage
 function clearAll(renderCallback, updateCountCallback) {
-  // TODO: Clear all tasks and localStorage
+  tasks = [];
+  taskMap.clear();
+  taskTitles.clear();
+  localStorage.removeItem("tasks");
+  renderCallback();
+  updateCountCallback();
+  showStatus("All tasks cleared!", "success");
 }
 
 // ==============================
