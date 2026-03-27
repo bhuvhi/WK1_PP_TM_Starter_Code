@@ -41,8 +41,9 @@ function showStatus(message, type = "success") {
 
 // Escapes HTML special characters to prevent XSS attacks
 function escapeHtml(text) {
-  // TODO: Escape HTML and return
-  return text;
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 // ==============================
@@ -57,8 +58,8 @@ function addTask(
   renderCallback,
   updateCountCallback,
 ) {
-  e.preventDefault();
-  const taskTitle = taskInput.value.trim();
+  e?.preventDefault();
+  const taskTitle = taskInput.value?.trim();
   if(taskTitle === '') {
     addTaskError.textContent = "Task title cannot be empty.";
     addTaskError.style.display = "block";
@@ -72,7 +73,7 @@ function addTask(
   }
 
   const task = {
-    id: taskId,
+    id: taskId++,
     title: taskTitle,
     status: "pending"
   };
@@ -80,8 +81,7 @@ function addTask(
   tasks.push(task);
   taskTitles.add(taskTitle);
   taskMap.set(task.id, task);
-  taskId++;
-
+  
   taskInput.value = "";
   addTaskError.textContent = "";
   addTaskError.style.display = "none";
@@ -113,19 +113,36 @@ function deleteTask(id, renderCallback, updateCountCallback) {
 
 // Saves all tasks to browser's localStorage
 function saveTasksToStorage() {
+  if (tasks.length === 0) {
+    showStatus("No tasks to save.", "info");
+    return;
+  }
   localStorage.setItem("tasks", JSON.stringify(tasks));
+  localStorage.setItem("taskId", taskId.toString());
   showStatus("Tasks saved to localStorage!", "success");
 }
 
 // Loads tasks from browser's localStorage
 function loadTasksFromStorage(renderCallback, updateCountCallback) {
   const savedTasks = localStorage.getItem("tasks");
+  const savedTaskId = localStorage.getItem("taskId");
+
   if (savedTasks) {
     tasks = JSON.parse(savedTasks);
+    tasks = [];
+    taskMap.clear();
+    taskTitles.clear();
+
     tasks.forEach((task) => {
       taskMap.set(task.id, task);
       taskTitles.add(task.title);
     });
+
+    taskId = savedTaskId
+      ? parseInt(savedTaskId)
+      : tasks.length
+        ? Math.max(...tasks.map((t) => t.id)) + 1
+        : 1;
     renderCallback();
     updateCountCallback();
   } else {
@@ -135,10 +152,19 @@ function loadTasksFromStorage(renderCallback, updateCountCallback) {
 
 // Clears all tasks from memory AND localStorage
 function clearAll(renderCallback, updateCountCallback) {
+  const hasTasks = tasks.length > 0;
+  const hasStorage = localStorage.getItem("tasks");
+
+  if (!hasTasks && !hasStorage) {
+    showStatus("No tasks or saved data to clear.", "info");
+    return;
+  }
   tasks = [];
   taskMap.clear();
   taskTitles.clear();
+  taskId = 1;
   localStorage.removeItem("tasks");
+  localStorage.removeItem("taskId");
   renderCallback();
   updateCountCallback();
   showStatus("All tasks cleared!", "success");
